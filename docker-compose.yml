@@ -1,0 +1,375 @@
+services:
+
+  student-management-system:
+    image: mini-shop-service:latest
+    build: .
+    container_name: mini-shop-service
+    ports:
+      - "8081:8080"
+    deploy:
+      replicas: 1
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo-router:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: "8080"
+      SPRING_PROFILES_ACTIVE: "docker"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-primary:5432/${DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_MONGODB_URI: mongodb://mongo-router:27017/${MONGO_DB}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_MAIL_HOST: ${MAIL_HOST}
+      SPRING_MAIL_PORT: ${MAIL_PORT}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
+      MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "always"
+    volumes:
+      - ./src/main/java:/app/src/main/java
+      - ./src/main/resources:/app/src/main/resources
+    env_file:
+      - .env
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "--spider",
+          "http://localhost:8080/actuator/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - saas-network
+
+  # ==================== PostgreSQL ====================
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: postgres-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders_db
+    volumes:
+      - postgres-primary-data:/var/lib/postgresql/data
+    networks:
+      - saas-network
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: >
+      postgres -c wal_level=replica -c max_wal_senders=10 -c wal_keep_size=1GB
+
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: postgres-replica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders_db
+    depends_on:
+      - postgres-primary
+    volumes:
+      - postgres-replica-data:/var/lib/postgresql/data
+    networks:
+      - saas-network
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: [ "postgres", "-c", "hot_standby=on", "-c", "primary_conninfo=host=postgres-primary port=5432 user=postgres password=postgres" ]
+    # ==================== PostgreSQL Test ====================
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: postgres-test
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: orders_test
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+    networks:
+      - saas-network
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      - postgres-primary
+  # ==================== MongoDB (Single-node Replica Set, no keyfile) ====================
+  mongo-primary:
+    image: mongo:7.0
+    container_name: mongo-primary
+    environment:
+      MONGO_INITDB_DATABASE: orders_db
+    volumes:
+      - mongo-primary-data:/data/db
+      - mongo-primary-config:/data/configdb
+    networks:
+      - saas-network
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: [ "mongod", "--replSet", "rs0", "--bind_ip_all" ]
+
+  # Initializes the replica set automatically after mongo-primary is healthy
+  mongo-init:
+    image: mongo:7.0
+    container_name: mongo-init
+    depends_on:
+      mongo-primary:
+        condition: service_healthy
+    networks:
+      - saas-network
+    restart: "no"
+    entrypoint: >
+      mongosh --host mongo-primary:27017 --eval '
+        try {
+          rs.status();
+          print("Replica set already initialized.");
+        } catch (e) {
+          rs.initiate({ _id: "rs0", members: [{ _id: 0, host: "localhost:27017" }] });
+          print("Replica set initiated.");
+        }
+      '
+    # ==================== Redis ====================
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    command: redis-server --appendonly yes --requirepass redis_password
+    volumes:
+      - redis-data:/data
+    networks:
+      - saas-network
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: redis-commander
+    depends_on:
+      - redis
+    networks:
+      - saas-network
+    ports:
+      - "8081:8081"
+    environment:
+      REDIS_HOSTS: local:redis:6379
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.3.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - saas-network
+    healthcheck:
+      test: [ "CMD-SHELL", "echo srvr | nc localhost 2181 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: confluentinc/cp-kafka:7.3.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      EXTRA_ARGS: "-javaagent:/opt/prometheus/jmx_prometheus_javaagent.jar=7071:/opt/prometheus/kafka-exporter.yml"
+    ports:
+      - "29092:29092"
+      - "9092:9092"
+      - "7071:7071"
+    volumes:
+      - ./monitoring/exporters/kafka-exporter.yml:/opt/prometheus/kafka-exporter.yml:ro
+      - ./monitoring/exporters/jmx_prometheus_javaagent.jar:/opt/prometheus/jmx_prometheus_javaagent.jar:ro
+    networks:
+      - saas-network
+    healthcheck:
+      test: [ "CMD-SHELL", "nc -z localhost 9092 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # ==================== SMTP (Mailhog) ====================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    networks:
+      - saas-network
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment:
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /maildir
+    volumes:
+      - mailhog-data:/maildir
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8025" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # ==================== Prometheus ====================
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    networks:
+      - saas-network
+    ports:
+      - "9090:9090"
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # ==================== Grafana ====================
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: grafana
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3000
+    networks:
+      - saas-network
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    # ==================== Node Exporter (for system metrics) ====================
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: node-exporter
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - saas-network
+    ports:
+      - "9100:9100"
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9100/metrics" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # ==================== Cadvisor (for container metrics) ====================
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - saas-network
+    ports:
+      - "8082:8080"
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  # ==================== Networks ====================
+networks:
+  saas-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+  # ==================== Volumes ====================
+volumes:
+  # PostgreSQL volumes
+  postgres-primary-data:
+  postgres-replica-data:
+  postgres-test-data:
+
+  # Redis volume
+  redis-data:
+
+  # Mailhog volume
+  mailhog-data:
+
+  # Monitoring volumes
+  prometheus-data:
+  grafana-data:
+
+  # MongoDB volumes
+  mongo-primary-data:
+  mongo-primary-config:

@@ -1,48 +1,44 @@
-name: Build and Test Mini Market System
+name: Mini Shop Tests CI
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
     branches:
-      - main
+      - main  # Adjust this branch as per your main branch name
+  pull_request:
+    branches:
+      - main  # Adjust this branch as per your main branch name
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: read
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17 for x64
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'adopt'
           architecture: x64
+          cache: maven
 
-      - name: Build with Maven
-        run: mvn clean install
-
-  deploy-on-push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: read
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK 17 for x64
-        uses: actions/setup-java@v3
+      - name: Cache the Maven packages to speed up build
+        uses: actions/cache@v4
         with:
-          java-version: '17'
-          distribution: 'adopt'
-          architecture: x64
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
 
       - name: Build with Maven
-        run: mvn clean install
+        run: mvn -B clean package --file pom.xml
+
+      - name: Run Cucumber Tests
+        run: mvn test  # Assuming your Cucumber tests are configured in Maven's `pom.xml`
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: target/surefire-reports  # Adjust the path based on your test results location

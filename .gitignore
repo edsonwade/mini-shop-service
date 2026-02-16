@@ -1,6 +1,6 @@
 HELP.md
 target/
-!.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -18,10 +18,6 @@ target/
 *.iws
 *.iml
 *.ipr
-.env
-*.env
-/.env
-/logs/archived/
 
 ### NetBeans ###
 /nbproject/private/
@@ -35,3 +31,16 @@ build/
 
 ### VS Code ###
 .vscode/
+mongodb-keyfile
+
+
+
+# ==================== Logs ====================
+*.log
+log/
+*.log.*
+
+# ==================== Configuration ====================
+*.env
+*.env.local
+*.env.*.local

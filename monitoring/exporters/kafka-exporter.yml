@@ -1,0 +1,8 @@
+lowercaseOutputName: true
+lowercaseOutputLabel: true
+whitelistObjectNames:
+  - "kafka.server:*"
+  - "kafka.controller:*"
+  - "kafka.log:*"
+  - "kafka.network:*"
+  - "java.lang:*"

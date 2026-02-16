@@ -1,0 +1,47 @@
+# Global configuration
+global:
+  scrape_interval: 5s       # How often Prometheus scrapes metrics from targets
+  evaluation_interval: 5s   # How often Prometheus evaluates rules
+
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: [ ]
+
+rule_files: [ ]
+
+# Scrape configurations for different targets
+scrape_configs:
+
+  # Prometheus' own metrics
+  - job_name: 'prometheus'
+    scrape_interval: 5s
+    static_configs:
+      - targets: [ 'localhost:9090' ]   # Prometheus exposes its own metrics here
+
+  # Kafka JMX metrics
+  - job_name: "kafka-jmx"
+    static_configs:
+      - targets: [ "kafka:7071" ]       # JMX exporter port from Kafka container
+
+  # Kafka Exporter metrics
+  - job_name: "kafka-exporter"
+    static_configs:
+      - targets: [ "kafka-exporter:9308" ]  # Kafka Exporter container metrics
+
+  # Spring Boot application metrics
+  - job_name: "student-management-app"
+    metrics_path: "/actuator/prometheus"  # Spring Boot Actuator endpoint
+    static_configs:
+      - targets: [ "student-management-system:8080" ]  # Use container name and internal port
+
+  # PostgreSQL metrics via Postgres Exporter
+  - job_name: "postgres"
+    static_configs:
+      - targets: [ "postgres-exporter:9187" ]   # Postgres Exporter container
+
+  # MongoDB metrics via MongoDB Exporter
+  - job_name: "mongodb"
+    static_configs:
+      - targets: [ "mongodb-exporter:9216" ]   # MongoDB Exporter container
