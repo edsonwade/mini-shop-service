@@ -2,7 +2,6 @@ package code.with.vanilson.market.shared.domain;
 
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
-import lombok.Getter;
 import org.springframework.data.domain.AfterDomainEventPublication;
 import org.springframework.data.domain.DomainEvents;
 

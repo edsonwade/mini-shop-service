@@ -114,9 +114,7 @@ class PaymentServiceTest {
     @DisplayName("should correctly map all payments in response")
     void testListAllPayments_CorrectMapping() {
         // Arrange
-        UUID paymentId1 = UUID.randomUUID();
         UUID orderId1 = UUID.randomUUID();
-        UUID paymentId2 = UUID.randomUUID();
         UUID orderId2 = UUID.randomUUID();
 
         Payment payment1 = Payment.builder()

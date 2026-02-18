@@ -1,8 +1,10 @@
 package code.with.vanilson.market.orders.api;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -16,16 +18,17 @@ public class OrderDto {
     public static class CreateRequest {
         @NotBlank
         private String tenantId;
-        @NotBlank
+        @NotNull
         private UUID customerId;
         @NotEmpty
+        @Valid
         private List<OrderItemRequest> items;
         private String couponCode; // Optional
     }
 
     @Data
     public static class OrderItemRequest {
-        @NotBlank
+        @NotNull
         private UUID productId;
         @Min(1)
         private int quantity;

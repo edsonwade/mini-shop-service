@@ -1,9 +1,7 @@
 package code.with.vanilson.market.orders.infrastructure;
 
-import code.with.vanilson.market.orders.domain.Order;
 import code.with.vanilson.market.orders.domain.OrderRepository;
 import code.with.vanilson.market.shared.domain.PaymentEvents;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
