@@ -321,13 +321,6 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <skipITs>true</skipITs>
-                    <systemPropertyVariables>
-                        <java.awt.headless>true</java.awt.headless>
-                    </systemPropertyVariables>
-                    <includes>
-                        <include>**/*Test.java</include>
-                    </includes>
                     <excludes>
                         <exclude>**/*IT.java</exclude>
                     </excludes>
@@ -359,11 +352,8 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
-                    <includes>
-                        <include>**/*IT.java</include>
-                    </includes>
                     <systemPropertyVariables>
-                        <java.awt.headless>true</java.awt.headless>
+                        <api.version>1.44</api.version>
                     </systemPropertyVariables>
                     <argLine>-Xmx1024m</argLine>
                 </configuration>
