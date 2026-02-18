@@ -2,15 +2,16 @@ package code.with.vanilson.market;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-/**
- * MarketApplication
- *
- * @author vamuhong
- * @version 1.0
- * @since 2024-09-06
- */
 @SpringBootApplication
+@EnableJpaRepositories(basePackages = "code.with.vanilson.market")
+@EnableMongoRepositories(basePackages = "code.with.vanilson.market")
+@EnableScheduling
+@EnableCaching
 public class MarketApplication {
 
     public static void main(String[] args) {

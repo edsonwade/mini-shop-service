@@ -42,9 +42,6 @@ RUN mkdir -p /app/logs /app/config /app/temp && \
 # Copy the built artifact from builder stage
 COPY --from=builder /build/target/*.jar app.jar
 
-# Copy configuration files
-COPY --chown=appuser:appgroup config/ /app/config/
-
 # Switch to non-root user
 USER appuser
 
