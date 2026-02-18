@@ -2,6 +2,7 @@ package code.with.vanilson.market.payments.api;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -11,7 +12,7 @@ public class PaymentDto {
 
     @Data
     public static class ProcessRequest {
-        @NotBlank
+        @NotNull
         private UUID orderId;
         @DecimalMin("0.01")
         private BigDecimal amount;

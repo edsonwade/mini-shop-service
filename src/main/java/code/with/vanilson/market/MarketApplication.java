@@ -8,8 +8,6 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "code.with.vanilson.market")
-@EnableMongoRepositories(basePackages = "code.with.vanilson.market")
 @EnableScheduling
 @EnableCaching
 public class MarketApplication {
