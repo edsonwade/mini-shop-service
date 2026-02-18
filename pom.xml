@@ -331,7 +331,7 @@
                     <excludes>
                         <exclude>**/*IT.java</exclude>
                     </excludes>
-                    <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
+                    <argLine>-Xmx1024m</argLine>
                 </configuration>
             </plugin>
 
@@ -365,7 +365,7 @@
                     <systemPropertyVariables>
                         <java.awt.headless>true</java.awt.headless>
                     </systemPropertyVariables>
-                    <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
+                    <argLine>-Xmx1024m</argLine>
                 </configuration>
                 <executions>
                     <execution>
