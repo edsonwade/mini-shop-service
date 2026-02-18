@@ -1,5 +1,6 @@
 package code.with.vanilson.market.shared.infrastructure.test;
 
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -14,6 +15,7 @@ import org.testcontainers.containers.KafkaContainer;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
+@DisabledIfEnvironmentVariable(named = "CI", matches = "true")
 public abstract class AbstractIntegrationTest {
 
     static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(DockerImageName.parse("postgres:16-alpine"))

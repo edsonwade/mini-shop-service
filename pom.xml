@@ -321,8 +321,13 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
                 <configuration>
+                    <systemPropertyVariables>
+                        <java.awt.headless>true</java.awt.headless>
+                        <CI>${env.CI}</CI>
+                    </systemPropertyVariables>
                     <excludes>
                         <exclude>**/*IT.java</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
                     </excludes>
                     <argLine>-Xmx1024m</argLine>
                 </configuration>
