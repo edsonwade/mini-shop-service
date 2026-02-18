@@ -4,9 +4,9 @@ spring:
 
   # PostgreSQL Configuration (Primary Database)
   datasource:
-    url: jdbc:postgresql://localhost:5433/saas_shop_db
-    username: ${DATABASE_USERNAME:postgres}
-    password: ${DATABASE_PASSWORD:postgres}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/market_db}
+    username: ${POSTGRES_USER:postgres}
+    password: ${POSTGRES_PASSWORD:password}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -20,14 +20,15 @@ spring:
 
 
     # PostgreSQL Replica (Read Replica)
-  datasource-replica:
-    url: jdbc:postgresql://localhost:5435/saas_shop_db
+  replica:
+    url: jdbc:postgresql://localhost:5435/market_db
     username: postgres
-    password: postgres
+    password: password
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
       minimum-idle: 5
+
 
   # JPA Configuration
   jpa:
@@ -49,8 +50,8 @@ spring:
   # MongoDB Configuration
   data:
     mongodb:
-      uri: mongodb://localhost:27017/saas_shop_db?replicaSet=rs0
-      database: saas_shop_db
+      uri: mongodb://localhost:27017/market_db?replicaSet=rs0
+      database: market_db
       auto-index-creation: true
 
 
@@ -83,35 +84,17 @@ spring:
 
   # Mail Configuration (optional)
   mail:
-    host: ${MAIL_HOST:localhost}
-    port: ${MAIL_PORT:1025}
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
+    host: localhost
+    port: 1025
+    username: ""
+    password: ""
     properties:
       mail:
         smtp:
           auth: false
           starttls:
             enable: false
-
-# JWT Configuration
-jwt:
-  secret: ${JWT_SECRET:your-256-bit-secret-key-for-jwt-token-signing-minimum-32-chars}
-  expiration: 86400000 # 24 hours in milliseconds
-  refresh-expiration: 604800000 # 7 days in milliseconds
-
-# Server Configuration
-server:
-  port: ${SERVER_PORT:8080}
-  servlet:
-    context-path: /api/v1
-    encoding:
-      charset: UTF-8
-      enabled: true
-      force: true
-  compression:
-    enabled: true
-    mime-types: text/html,text/xml,text/plain,text/css,text/javascript,application/javascript,application/json
+          from: "Mini Market <no-reply@minimarket.com>"
 
 # Actuator & Prometheus Configuration
 management:
@@ -159,3 +142,24 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: method
     tags-sorter: alpha
+
+
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: market-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  # JWT Configuration
+app:
+  jwt:
+    secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    expiration: 86400000 # 1 day
