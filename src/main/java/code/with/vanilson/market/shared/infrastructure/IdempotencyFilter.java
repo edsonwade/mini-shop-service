@@ -21,11 +21,11 @@ public class IdempotencyFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    @Nonnull HttpServletResponse response,
-                                    @Nonnull FilterChain filterChain)
+            @Nonnull HttpServletResponse response,
+            @Nonnull FilterChain filterChain)
             throws ServletException, IOException {
 
-        String idempotencyKey = request.getHeader("Idempotency-Key");
+        String idempotencyKey = request.getHeader("X-Idempotency-Key");
 
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             String method = request.getMethod();

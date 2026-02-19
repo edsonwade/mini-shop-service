@@ -45,7 +45,7 @@ services:
           "wget",
           "-q",
           "--spider",
-          "http://localhost:8080/actuator/health",
+          "http://localhost:8080/api/actuator/health",
         ]
       interval: 30s
       timeout: 10s
@@ -53,6 +53,23 @@ services:
       start_period: 40s
     networks:
       - saas-network
+
+  mini-market-frontend:
+    image: mini-market-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mini-market-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      shop-management-system:
+        condition: service_healthy
+    environment:
+      - VITE_API_BASE_URL=/api
+    networks:
+      - saas-network
+    restart: unless-stopped
 
   # ==================== PostgreSQL ====================
   postgres-primary:
@@ -107,6 +124,7 @@ services:
     command: [ "postgres", "-c", "hot_standby=on", "-c", "primary_conninfo=host=postgres-primary port=5432 user=postgres password=postgres" ]
 
     restart: unless-stopped
+
     # ==================== PostgreSQL Test ====================
   postgres-test:
     image: postgres:16-alpine
@@ -129,6 +147,7 @@ services:
       start_period: 10s
     depends_on:
       - postgres-primary
+
   # ==================== MongoDB (Single-node Replica Set, no keyfile) ====================
   mongo-primary:
     image: mongo:7.0
@@ -170,6 +189,7 @@ services:
           print("Replica set initiated.");
         }
       '
+
     # ==================== Redis ====================
   redis:
     image: redis:7-alpine
@@ -196,7 +216,7 @@ services:
     networks:
       - saas-network
     ports:
-      - "8081:8081"
+      - "8083:8081"
     environment:
       REDIS_HOSTS: local:redis:6379
 
@@ -244,6 +264,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
+
     # ==================== SMTP (Mailhog) ====================
   mailhog:
     image: mailhog/mailhog:latest
@@ -264,6 +285,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
     # ==================== Prometheus ====================
   prometheus:
     image: prom/prometheus:v2.47.0
@@ -288,6 +310,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
     # ==================== Grafana ====================
   grafana:
     image: grafana/grafana:10.1.0
@@ -312,6 +335,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
     # ==================== Node Exporter (for system metrics) ====================
   node-exporter:
     image: prom/node-exporter:v1.6.1
@@ -334,6 +358,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
     # ==================== Cadvisor (for container metrics) ====================
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
@@ -354,6 +379,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
   # ==================== Networks ====================
 networks:
   saas-network:
@@ -361,6 +387,7 @@ networks:
     ipam:
       config:
         - subnet: 172.28.0.0/16
+
   # ==================== Volumes ====================
 volumes:
   # PostgreSQL volumes
