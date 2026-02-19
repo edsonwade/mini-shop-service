@@ -1,180 +1,119 @@
-# 🛒 Mini Market SaaS System
+# 🛒 Mini Market Full-Stack SaaS Ecosystem
 
-![Java 17](https://img.shields.io/badge/Java-17-orange?style=for-the-badge&logo=java)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-green?style=for-the-badge&logo=spring-boot)
-![Kafka](https://img.shields.io/badge/Kafka-Event_Driven-black?style=for-the-badge&logo=apache-kafka)
-![Docker](https://img.shields.io/badge/Docker-Containerized-blue?style=for-the-badge&logo=docker)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Relational_DB-336791?style=for-the-badge&logo=postgresql)
-![MongoDB](https://img.shields.io/badge/MongoDB-Audit_Log-47A248?style=for-the-badge&logo=mongodb)
-![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=for-the-badge&logo=redis)
+[![Java 17](https://img.shields.io/badge/Java-17-orange?style=flat-square&logo=java)](https://jdk.java.net/17/)
+[![Spring Boot 3.3](https://img.shields.io/badge/Spring_Boot-3.3-green?style=flat-square&logo=spring-boot)](https://spring.io/projects/spring-boot)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![Kafka](https://img.shields.io/badge/Kafka-Event_Driven-black?style=flat-square&logo=apache-kafka)](https://kafka.apache.org/)
+[![Docker](https://img.shields.io/badge/Docker-Orchestrated-2496ED?style=flat-square&logo=docker)](https://www.docker.com/)
 
 ## 🌟 Overview
 
-**Mini Market SaaS** is an enterprise-grade, **Event-Driven E-Commerce Platform** built with **Spring Boot** and **Kafka**. It adheres to **Domain-Driven Design (DDD)**, **SOLID** principles, and **12-Factor App** methodology.
+**Mini Market SaaS** is a comprehensive, production-ready **Full-Stack E-Commerce Platform**. It features a modern **React Dashboard** integrated with a high-scale, **Event-Driven Backend** built on **Spring Boot** and **Apache Kafka**. 
 
-Unlike simple CRUD applications, this system implements complex distributed patterns like **Saga Choreography** for data consistency across microservices (logic modules) and **Asynchronous Event Processing** for high performance.
-
----
-
-## 🚀 Key Features
-
-### 📡 Event-Driven Architecture (EDA)
-- **Saga Choreography**: Orders and Payments are fully decoupled. Transactional consistency is maintained via eventual consistency patterns.
-  - `OrderPlacedEvent` -> Triggers Payment Processing.
-  - `PaymentCapturedEvent` -> Triggers Order Completion.
-  - `PaymentFailedEvent` -> Triggers Order Cancellation (Compensating Transaction).
-- **Async Customer Onboarding**: User registration triggers `UserRegisteredEvent`, which asynchronously creates customer profiles and performs KYC checks.
-
-### 🛡️ Advanced Security & Identity
-- **Stateless Authentication**: JWT (JSON Web Tokens) with Access and Refresh Token rotation.
-- **Multi-Factor Authentication (MFA)**: Mandatory 2FA using Time-based One-Time Passwords (TOTP) compatible with Google Authenticator/Authy.
-- **Recovery Codes**: Secure backup codes for account recovery.
-- **Role-Based Access Control (RBAC)**: Fine-grained permissions for Customers and Admins.
-
-### 💎 Domain-Driven Design (DDD)
-- **Rich Domain Models**: Business logic encapsulated in entities (e.g., `Order.applyCoupon()`, `Money.subtract()`).
-- **Value Objects**: Immutable objects like `Money` ensuring type safety and logic centralization.
-- **Separation of Concerns**: Strict boundary between API (Controllers), Application (Services), Domain (Entities), and Infrastructure (Repositories/External Adapters).
-
-### ⚡ Resilience & Compliance
-- **Rate Limiting**: API protection using **Resilience4j** (Token Bucket algorithm) to prevent abuse.
-- **Audit Logging**: Asynchronous, non-blocking audit trails stored in **MongoDB** for compliance.
-- **Idempotency**: Redis-backed idempotency keys to prevent duplicate transaction processing.
-- **KYC Verification**: Dedicated flow for Know Your Customer (KYC) compliance.
+This ecosystem is designed for **Multi-Tenancy**, utilizing **Domain-Driven Design (DDD)** and **Saga Choreography** to ensure strict data isolation and eventual consistency across distributed services.
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ System Architecture
+
+The ecosystem utilizes a **Clean Architecture** approach with a dedicated **Reverse Proxy** (Nginx) to bridge the frontend and backend.
 
 ```mermaid
 graph TD
-    Client[Client App/Web] -->|REST API| Gateway[API Gateway / Load Balancer]
+    User((User)) -->|HTTPS| Nginx[Nginx Reverse Proxy]
     
-    subgraph "Core Domain Modules"
+    subgraph "Frontend Layer (React)"
+        Dashboard[Admin Dashboard SPA]
+    end
+    
+    subgraph "Backend Core (Spring Boot)"
+        API[RESTful API Gateway]
         Auth[Identity & Access]
-        Orders[Order Management]
-        Payments[Payment Processing]
-        Products[Inventory & Catalog]
-        Customers[Customer Profiles]
+        CRM[Customer & KYC]
+        Shop[Product & Inventory]
+        Fin[Payments & Orders]
     end
     
-    Gateway --> Auth
-    Gateway --> Orders
-    Gateway --> Payments
-    Gateway --> Products
-    Gateway --> Customers
-    
-    Auth -->|UserRegisteredEvent| Kafka
-    Orders -->|OrderPlacedEvent| Kafka
-    Payments -->|PaymentCaptured / Failed| Kafka
-    
-    Kafka -->|Consumes| Customers
-    Kafka -->|Consumes| Payments
-    Kafka -->|Consumes| Orders
-    
-    Orders --> Postgres[(PostgreSQL)]
-    Payments --> Postgres
-    Products --> Postgres
-    Customers --> Postgres
-    Auth --> Postgres
-    
-    Auth --> Redis[(Redis Cache/Idempotency)]
-    
-    subgraph "Audit & Compliance"
-        AuditService
-        Mongo[(MongoDB Audit Log)]
+    subgraph "Event Bus & Persistence"
+        Kafka{Apache Kafka}
+        Postgres[(PostgreSQL)]
+        Redis[(Redis Cache)]
+        Mongo[(MongoDB Audit)]
     end
+
+    Nginx --> Dashboard
+    Nginx -->|/api| API
     
-    Gateway --> AuditService --> Mongo
+    API --> Auth & CRM & Shop & Fin
+    Auth & CRM & Shop & Fin --> Kafka
+    Auth & CRM & Shop & Fin --> Postgres & Redis
+    Auth & CRM & Shop & Fin --> Mongo
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## 🚀 Key Modules
 
-| Category | Technology | Usage |
-| :--- | :--- | :--- |
-| **Language** | Java 17 | Core programming language |
-| **Framework** | Spring Boot 3.3 | App framework (Web, Data, Security) |
-| **Messaging** | Apache Kafka | Event bus for async communication |
-| **Database** | PostgreSQL | Primary relational database |
-| **NoSQL** | MongoDB | High-volume audit logging |
-| **Caching** | Redis | Caching, Idempotency, Session store |
-| **Security** | Spring Security | AuthZ/AuthN, OAuth2 Resource Server |
-| **Resilience** | Resilience4j | Circuit Breakers, Rate Limiters |
-| **Build Tool** | Maven | Dependency management |
-| **Container** | Docker | Containerization & Orchestration |
+### 🎨 Modern Frontend Dashboard
+- **Tech Stack**: React 18, TypeScript, Tailwind CSS, Vite.
+- **State Management**: TanStack Query (React Query) for server state and Zustand for local state.
+- **Security**: HttpOnly Cookie / JWT Storage with automatic token rotation.
+- **Components**: Shadcn/UI for a premium, accessible user interface.
+
+### 📡 Event-Driven Backend
+- **Saga Patterns**: Decoupled order/payment flows using Kafka-based asynchronous messaging.
+- **Multi-Tenancy**: Logical data isolation across all domains via `tenantId` scoping.
+- **IAM & 2FA**: Advanced Identity and Access Management with TOTP (TOTP) and recovery codes.
+- **Observability**: Integrated Prometheus & Grafana for real-time performance monitoring.
 
 ---
 
-## 🏁 Getting Started
+## 🛠️ Full-Stack Technology Stack
 
-### Prerequisites
-- **Java 17+**
-- **Docker Desktop** (or Docker Engine + Compose)
-- **Maven** (optional, wrapper included)
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React, TypeScript, Tailwind CSS, Vite, TanStack Query |
+| **Backend** | Java 17, Spring Boot 3.3, Spring Security |
+| **Broker** | Apache Kafka (Event Streaming) |
+| **Databases** | PostgreSQL (Relational), MongoDB (Audit), Redis (Cache) |
+| **Orchestration**| Docker, Docker Compose, Nginx |
+| **CI/CD** | GitHub Actions (Maven-CI, Frontend-CI) |
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/vanilson/mini-market-system.git
-cd mini-market-system
-```
+---
 
-### 2. Build the Application
-```bash
-./mvnw clean package -DskipTests
-```
+## 🏁 Getting Started (Docker Orchestration)
 
-### 3. Start Infrastructure & App
-Use Docker Compose to start the database, brokers, and the application container.
+The entire ecosystem is containerized for seamless local development and deployment.
+
+### 1. Build and Launch
+Ensure you have **Docker Desktop** installed.
 ```bash
 docker-compose up -d --build
 ```
-> **Note**: The application will be available at `http://localhost:8080`.
-> - **Swagger UI**: `http://localhost:8080/swagger-ui.html`
-> - **Prometheus**: `http://localhost:9090`
-> - **Grafana**: `http://localhost:3000`
+
+### 2. Access Points
+- **Frontend Dashboard**: [http://localhost](http://localhost) (Nginx managed)
+- **API Specification**: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- **Monitoring Hub**:
+  - Prometheus: [http://localhost:9090](http://localhost:9090)
+  - Grafana: [http://localhost:3000](http://localhost:3000)
+- **Mail Preview**: [http://localhost:8025](http://localhost:8025) (Mailhog)
 
 ---
 
 ## 📚 API Documentation
 
-The API is fully documented using **OpenAPI 3.0 (Swagger)**.
-
-### Key Endpoints
-
-#### 🔐 Authentication
-- `POST /api/auth/register` - Register new user (triggers async Customer creation).
-- `POST /api/auth/login` - Login and receive JWT.
-- `POST /api/auth/2fa/verify` - Verify TOTP code.
-
-#### 🛒 Orders & Payments
-- `POST /api/orders` - Place a new order (starts Saga).
-- `POST /api/payments/refund/{orderId}` - Administration refund.
-- `GET /api/orders/{id}` - Get order status.
-
-#### 👥 Customers
-- `POST /api/customers/{id}/kyc` - Verify Customer Identity.
-- `GET /api/customers/me` - Get profile.
-
----
-
-## 🧪 Testing
-
-Run unit and integration tests:
-```bash
-./mvnw test
-```
-
-For compliance checks:
-```bash
-./mvnw clean package
-```
+The platform exposes a comprehensive **OpenAPI 3.1** specification. Each endpoint is documented with:
+- **Authorization**: Bearer JWT support.
+- **Schemas**: Full DTO definitions with example values.
+- **Security**: Explicit response codes for AuthZ/AuthN failures.
 
 ---
 
 ## 📜 License
-This project is licensed under the **MIT License**.
+Licensed under the **MIT License**.
 
 ---
-*Built with ❤️ for High-Scale SaaS Architecture.*
+*Enterprise-Grade SaaS Architecture, Built for Performance.*
